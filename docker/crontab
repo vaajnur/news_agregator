@@ -1,0 +1,2 @@
+*/5 * * * * /usr/local/bin/php /var/www/html/bin/fetch.php >> /var/log/news-fetch.log 2>&1
+

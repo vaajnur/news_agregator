@@ -1,0 +1,54 @@
+services:
+  app:
+    build: .
+    container_name: news_aggregator_app
+    ports:
+      - "8080:80"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: news_aggregator
+      DB_USER: news
+      DB_PASS: news
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: 11211
+      RSS_URL: https://ria.ru/export/rss2/archive/index.xml
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+      memcached:
+        condition: service_started
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: news_aggregator_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: news_aggregator
+      MYSQL_USER: news
+      MYSQL_PASSWORD: news
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  memcached:
+    image: memcached:1.6-alpine
+    container_name: news_aggregator_memcached
+    ports:
+      - "11211:11211"
+    command: ["memcached", "-m", "64"]
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
